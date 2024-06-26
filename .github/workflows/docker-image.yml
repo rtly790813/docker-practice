@@ -1,0 +1,35 @@
+# @format
+
+name: Build and Push Docker Image
+
+# on : 用來定義什麼時候自動觸發當前的這個 workflow，觸發的寫法可以用， [push, fork, ...] 或是如下，指定事件＋篩選器 https://docs.github.com/zh/actions/using-workflows/triggering-a-workflow#using-events-to-trigger-workflows
+# 觸發事件種類: https://docs.github.com/zh/actions/using-workflows/events-that-trigger-workflows#about-events-that-trigger-workflows
+on:
+    push: # 指定了在 push branch 'main' 之後，執行 workflow
+        branches:
+            - main # 可以根据需要更改为你的默认分支名称
+
+jobs: # jobs 指的是定義這個 action 中的工作內容，可以指定 1 至多個
+    build: # jobs.<job_id> 是開發者可以自訂義的，主要的目的是定義這個 job 的用途，以及方便其他開發者識別，另外一個功用是，如果有多個 job_id 之間有相依關係，就可以透過 `needs` 來添加其他 job_id，告訴 workflow 需要先完成指定的 job_id 才可以在執行下一個 job_id, 經常會以 build, test, deployment, code quality, security, release ...etc 來作為命名
+        runs-on: ubuntu-latest # runs-on 指定 github action 在執行時，要使用的虛擬環境作業系統，可以根據需求來選擇 ubuntu-latest / windows-latest / macos-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4 # checkout 的目的是將 repository 中的檔案，複製一份到 $GITHUB_WORKSPACE 的位置中，之後運行的步驟都會依據這個位置做任何動作，像是 build, test, deployment ..etc https://github.com/actions/checkout
+              # $GITHUB_WORKSPACE 則是指 Github action 內建的環境變數，指向的是工作運行的路徑，亦可透過這個變數來指定路徑
+
+            # - name: Set up Docker Buildx
+            #   uses: docker/setup-buildx-action@v2
+
+            - name: Login to Docker Hub
+              uses: docker/login-action@v3
+              with:
+                  username: ${{ secrets.DOCKER_USERNAME }}
+                  password: ${{ secrets.DOCKER_PASSWORD }}
+
+            - name: Build and push Docker image
+              uses: docker/build-push-action@v4
+              with:
+                  context: .
+                  push: true
+                  tags: yangzhenzhen/v-test:latest
